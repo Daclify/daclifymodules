@@ -52,7 +52,7 @@ ACTION elections::newelection(name actor){
   while(new_custs.size() < max_cust && !table_end_flag){
     //ignore inactive candidates and zero total_votes
     if(cand_itr != by_votes.end() && cand_itr->total_votes > 0 ){
-      if(cand_itr->is_active){
+      if(cand_itr->state == ACTIVE){
         new_custs.push_back(cand_itr->cand);
       }
       cand_itr++;
@@ -101,46 +101,65 @@ ACTION elections::regcand(name account){
     check(s_itr->balance.quantity.amount >= conf.cand_min_stake.quantity.amount, "Not enough staked for candidancy.");
   }
 
-  candidates_table _candidates(get_self(), get_self().value);
-  auto cand_itr = _candidates.find(account.value);
-  check(cand_itr == _candidates.end(), "Account is already a candidate.");
-
-  _candidates.emplace(account, [&](auto& n) {
-    n.cand = account;
-    n.registered = time_point_sec(current_time_point());
-    n.is_active = 1;
-    n.total_votes=0;
-  });
-
-
   state_table _state(get_self(), get_self().value);
   auto s = _state.get_or_default(state() );
-  s.active_candidate_count += 1;
+
+  candidates_table _candidates(get_self(), get_self().value);
+  auto cand_itr = _candidates.find(account.value);
+
+  //not in table yet
+  if(cand_itr == _candidates.end() ){
+    _candidates.emplace(account, [&](auto& n) {
+      n.cand = account;
+      n.registered = time_point_sec(current_time_point());
+      n.state = ACTIVE; //1
+      n.total_votes=0;
+    });
+    s.active_candidate_count++;
+  }
+  else{
+    check(cand_itr->state != FIRED, "Fired account can't register as candidate again. Contact custodians.");
+    check(cand_itr->state != ACTIVE && cand_itr->state != PAUSED, "Account is already a registered candidate.");
+
+    _candidates.modify(cand_itr, same_payer, [&](auto& n) {
+      n.state = ACTIVE;
+      n.registered = time_point_sec(current_time_point());
+    });
+
+    s.active_candidate_count++;
+    s.unregistered_candidate_count--;
+  
+  }
+
   _state.set(s, get_self() );
 
 }
 
-ACTION elections::pausecampaig(name candidate, bool is_active){
+ACTION elections::pausecampaig(name candidate, bool paused){
   require_auth(candidate);
   candidates_table _candidates(get_self(), get_self().value);
   auto cand_itr = _candidates.find(candidate.value);
   check(cand_itr != _candidates.end(), "Candidate not found.");
-  check(cand_itr->is_active != is_active, "Campaign already in state is_active.");
-  _candidates.modify(cand_itr, same_payer, [&](auto& n) {
-    n.is_active = is_active;
-  });
+  
+  check(cand_itr->state != FIRED, "Fired accounts can't pause campaign. Contact custodians.");
+  check(cand_itr->state != UNREGISTERED, "Register as candidate first.");
 
-  //update state
   state_table _state(get_self(), get_self().value);
   auto s = _state.get_or_default(state() );  
-  if(is_active){
-    s.active_candidate_count += 1;
-    s.inactive_candidate_count -= 1;
+
+  if(paused){
+    check(cand_itr->state == ACTIVE, "Campaign already in paused state.");
+    s.active_candidate_count--;
+    s.paused_candidate_count++;
   }
   else{
-    s.active_candidate_count -= 1;
-    s.inactive_candidate_count += 1;
+    check(cand_itr->state == PAUSED, "Campaign already in active state.");
+    s.active_candidate_count++;
+    s.paused_candidate_count--;
   }
+  _candidates.modify(cand_itr, same_payer, [&](auto& n) {
+    n.state = paused ? PAUSED : ACTIVE;
+  });
   _state.set(s, get_self() );
 }
 
@@ -149,18 +168,73 @@ ACTION elections::unregcand(name candidate){
   candidates_table _candidates(get_self(), get_self().value);
   auto cand_itr = _candidates.find(candidate.value);
   check(cand_itr != _candidates.end(), "Candidate not found.");
+  check(cand_itr->state != FIRED, "Candidate fired.");
+  check(cand_itr->state != UNREGISTERED, "Candidate already unregistered.");
   
   state_table _state(get_self(), get_self().value);
   auto s = _state.get_or_default(state() );
-  if(cand_itr->is_active){
-    s.active_candidate_count -= 1;
-  }
-  else{
-    s.inactive_candidate_count -= 1;
-  }
 
+  if(cand_itr->state == ACTIVE){
+    s.active_candidate_count--;
+    s.unregistered_candidate_count++;
+  }
+  else if(cand_itr->state == PAUSED){
+    s.paused_candidate_count--;
+    s.unregistered_candidate_count++;
+  }
   _state.set(s, get_self() );
-  _candidates.erase(cand_itr);
+
+  _candidates.modify(cand_itr, same_payer, [&](auto& n) {
+    n.state = UNREGISTERED;
+  });
+}
+
+ACTION elections::firecand(name account){
+  require_auth(get_self() );
+  candidates_table _candidates(get_self(), get_self().value);
+  auto cand_itr = _candidates.find(account.value);
+  check(cand_itr != _candidates.end(), "Candidate not found.");
+
+  state_table _state(get_self(), get_self().value);
+  auto s = _state.get_or_default(state() );
+
+  check(cand_itr->state != FIRED, "candidate already fired");
+
+  if(cand_itr->state == UNREGISTERED){
+    s.unregistered_candidate_count--;
+  }
+  else if(cand_itr->state == PAUSED){
+    s.paused_candidate_count--;
+  }
+  else if(cand_itr->state == ACTIVE){
+    s.active_candidate_count--;
+  }
+  s.fired_candidate_count++;
+  _state.set(s, get_self() );
+
+  _candidates.modify(cand_itr, same_payer, [&](auto& n) {
+    n.state = FIRED;
+  });
+}
+
+ACTION elections::unfirecand(name account){
+  require_auth(get_self() );
+  candidates_table _candidates(get_self(), get_self().value);
+  auto cand_itr = _candidates.find(account.value);
+  check(cand_itr != _candidates.end(), "Candidate not found.");
+  check(cand_itr->state == FIRED, "candidate not fired");
+
+  state_table _state(get_self(), get_self().value);
+  auto s = _state.get_or_default(state() );
+
+  s.unregistered_candidate_count++;
+  s.fired_candidate_count--;
+  
+  _state.set(s, get_self() );
+
+  _candidates.modify(cand_itr, same_payer, [&](auto& n) {
+    n.state = UNREGISTERED;
+  });
 }
 
 ACTION elections::updatepay(name candidate, extended_asset new_pay){
@@ -169,8 +243,10 @@ ACTION elections::updatepay(name candidate, extended_asset new_pay){
   auto cand_itr = _candidates.find(candidate.value);
   check(cand_itr != _candidates.end(), "Candidate not found.");
   mod_config conf = get_config();
-  check(conf.max_pay.quantity.amount > 0, "Payments not allowed.");
-  check(new_pay <= conf.max_pay, "Invalid pay.");//does this handle different symbol/contract?
+  check(conf.max_pay.quantity.amount > 0, "Payments not enabled.");
+  check(new_pay <= conf.max_pay, "Invalid pay.");
+  check(cand_itr->state == ACTIVE, "Candidate must be active to update pay.");
+
   _candidates.modify(cand_itr, same_payer, [&](auto& n) {
     n.pay = new_pay;
   });
@@ -194,21 +270,25 @@ ACTION elections::vote(name voter, vector<name> new_votes){
     check(v_itr != _electorate.end(), "Account not included in electorate." );
   }
 
+  voters_table _voters(get_self(), get_self().value);
+  auto voter_itr = _voters.find(voter.value);
+
   candidates_table _candidates(get_self(), get_self().value);
   //deduplicate and validate votes
   std::set<name> dupvotes;
+
   for (name vote: new_votes) {
     check(dupvotes.insert(vote).second, "Duplicate candidate vote.");
-    auto cand = _candidates.get(vote.value, "Vote for non existing candidate");
-    check(cand.is_active, "Vote for inactive candidate.");
+    auto cand = _candidates.get(vote.value, "Vote for non existing candidate ");
+
+
+    check(cand.state == ACTIVE, "Vote for inactive candidate.");
     if(!conf.allow_self_vote){
       check(voter != vote, "Voting for self not allowed");
     }
   }
 
-  voters_table _voters(get_self(), get_self().value);
 
-  auto voter_itr = _voters.find(voter.value);
   bool is_new_voter = voter_itr == _voters.end();
 
   vector<name> old_votes = is_new_voter ? old_votes : voter_itr->votes;//set votes to empty vector if is new voter else use old votes
@@ -216,7 +296,7 @@ ACTION elections::vote(name voter, vector<name> new_votes){
 
   //get new voteweight of voter
   uint64_t new_vote_weight;//todo get it
-  if(conf.weight_provider != get_self() ) {
+  if(conf.weight_provider != get_self() || conf.weight_provider.value != 0 ) {
     new_vote_weight = get_external_weight(conf.weight_provider, voter);
   }
   else{
@@ -258,7 +338,6 @@ ACTION elections::addelectorat(vector<name> voters){
     if (existing_voter == _electorate.end()){
       //new voter
       _electorate.emplace(get_self(), [&](auto& n) {
-          //todo
           n.voter = voter;
       });
     }
@@ -302,7 +381,11 @@ ACTION elections::unstake(name member, extended_asset stakeasset){
 
   time_point_sec release;
   if(stakeasset.contract == conf.cand_min_stake.contract && stakeasset.quantity.symbol == conf.cand_min_stake.quantity.symbol){
-    check(!is_candidate(member), "Unregister as candidate first.");
+    //check(!is_candidate(member), "Unregister as candidate first.");
+    candidates_table _candidates(get_self(), get_self().value);
+    auto cand_itr = _candidates.find(member.value);
+    check(cand_itr != _candidates.end(), "member not in the candidate table.");
+    check(cand_itr->state == UNREGISTERED, "Unregister as candidate first.");
     release = time_point_sec(current_time_point().sec_since_epoch() + conf.cand_stake_release_sec);
   }
   else{
@@ -313,7 +396,7 @@ ACTION elections::unstake(name member, extended_asset stakeasset){
 
   stakerelease_table _stakerelease(get_self(), get_self().value );
   _stakerelease.emplace(member, [&](auto& n) {
-    n.id = _stakerelease.available_primary_key();;
+    n.id = _stakerelease.available_primary_key();
     n.member = member;
     n.balance = stakeasset;
     n.release_time = release;
@@ -324,7 +407,7 @@ ACTION elections::claimstake(name member, uint64_t id){
   require_auth(member);
   stakerelease_table _stakerelease(get_self(), get_self().value );
   auto itr = _stakerelease.find(id);
-  check(itr != _stakerelease.end(), "No stake release with this id.");
+  check(itr != _stakerelease.end(), "No stake waiting to be release with this id.");
   check(itr->member == member, "Account is not the owner of this stake release");
   time_point_sec now = time_point_sec(current_time_point());
   check(now > itr->release_time,"Release time not met.");

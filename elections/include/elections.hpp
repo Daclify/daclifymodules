@@ -27,6 +27,15 @@ CONTRACT elections : public contract {
       "weight_provider": ""
     }
     */
+    
+    enum candidate_state : uint8_t {
+      UNREGISTERED = 0,
+      ACTIVE = 1,
+      PAUSED = 2,
+      FIRED = 3
+    };
+
+
     struct mod_config{
 
       bool cand_registration = false;
@@ -50,7 +59,9 @@ CONTRACT elections : public contract {
     ACTION updateconf(mod_config new_conf, bool remove);
     ACTION newelection(name actor);
     ACTION regcand(name account);
-    ACTION pausecampaig(name candidate, bool is_active);
+    ACTION firecand(name account);
+    ACTION unfirecand(name account);
+    ACTION pausecampaig(name candidate, bool paused);
     ACTION unregcand(name candidate);
     ACTION updatepay(name candidate, extended_asset new_pay);
     ACTION vote(name voter, vector<name> new_votes);
@@ -83,8 +94,14 @@ CONTRACT elections : public contract {
 
     TABLE state {
       uint64_t election_count=0;
-      uint64_t active_candidate_count=0;
-      uint64_t inactive_candidate_count=0;
+      uint64_t active_candidate_count=0; //active
+      //uint64_t inactive_candidate_count=0; //unregistered, paused and fired
+      uint64_t paused_candidate_count=0;
+      uint64_t unregistered_candidate_count=0;
+      uint64_t fired_candidate_count=0;
+      uint64_t r1=0;
+      uint64_t r2=0;
+      uint64_t r3=0;
       uint64_t total_vote_weight=0;
       time_point_sec last_election = time_point_sec(0);
     };
@@ -104,15 +121,17 @@ CONTRACT elections : public contract {
     TABLE candidates{
       name cand;
       uint64_t total_votes = 0;
-      bool is_active = 0;
+      uint64_t state = 0; //see enum
       time_point_sec registered;
       extended_asset pay;
 
       auto primary_key() const { return cand.value; }
       uint64_t by_votes() const { return static_cast<uint64_t>(UINT64_MAX - total_votes);}
+      uint64_t by_state() const { return state;}
     };
     typedef multi_index<name("candidates"), candidates,
-      eosio::indexed_by<"byvotes"_n, eosio::const_mem_fun<candidates, uint64_t, &candidates::by_votes >>
+      eosio::indexed_by<"byvotes"_n, eosio::const_mem_fun<candidates, uint64_t, &candidates::by_votes >>,
+      eosio::indexed_by<"bystate"_n, eosio::const_mem_fun<candidates, uint64_t, &candidates::by_state >>
     > candidates_table;
 
     // selected voters, exclude others
@@ -146,7 +165,7 @@ CONTRACT elections : public contract {
 
 
     //functions//
-    bool is_candidate(const name& cand);
+    //bool is_candidate(const name& cand);
     void propagate_votes(vector<name> old_votes, vector<name> new_votes, uint64_t old_vote_weight, uint64_t new_vote_weight);
     mod_config get_config();
     void add_stake( const name& account, const extended_asset& value);

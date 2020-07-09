@@ -4,7 +4,7 @@ elections::mod_config elections::get_config(){
   return conf.conf;
 }
 
-
+/*
 bool elections::is_candidate(const name& cand){
   candidates_table _candidates(get_self(), get_self().value);
   auto itr = _candidates.find(cand.value);
@@ -15,6 +15,7 @@ bool elections::is_candidate(const name& cand){
     return true;
   }
 }
+*/
 
 void elections::propagate_votes(vector<name> old_votes, vector<name> new_votes, uint64_t old_vote_weight, uint64_t new_vote_weight){
 
@@ -38,6 +39,7 @@ void elections::propagate_votes(vector<name> old_votes, vector<name> new_votes, 
         for(name cand : new_votes){
           auto cand_itr2 = _candidates.find(cand.value);
           if(cand_itr2 != _candidates.end() ){
+          //check register time cand > last voted voter
             _candidates.modify(cand_itr2, same_payer, [&](auto& n) {
                 uint64_t res = n.total_votes + new_vote_weight;
                 check(res >= n.total_votes, "vote weight overflow!");

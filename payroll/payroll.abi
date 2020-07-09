@@ -1,0 +1,283 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "freeze",
+            "base": "",
+            "fields": [
+                {
+                    "name": "freeze",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "pay",
+            "base": "",
+            "fields": [
+                {
+                    "name": "pay_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "paymentadd",
+            "base": "",
+            "fields": [
+                {
+                    "name": "payroll_tag",
+                    "type": "name"
+                },
+                {
+                    "name": "receiver",
+                    "type": "name"
+                },
+                {
+                    "name": "amount",
+                    "type": "asset"
+                },
+                {
+                    "name": "due_date",
+                    "type": "time_point_sec"
+                },
+                {
+                    "name": "repeat",
+                    "type": "uint8"
+                },
+                {
+                    "name": "recurrence_sec",
+                    "type": "uint64"
+                },
+                {
+                    "name": "auto_pay",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "paymentrem",
+            "base": "",
+            "fields": [
+                {
+                    "name": "pay_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "payments",
+            "base": "",
+            "fields": [
+                {
+                    "name": "pay_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "payroll_tag",
+                    "type": "name"
+                },
+                {
+                    "name": "receiver",
+                    "type": "name"
+                },
+                {
+                    "name": "amount",
+                    "type": "asset"
+                },
+                {
+                    "name": "submitted",
+                    "type": "time_point_sec"
+                },
+                {
+                    "name": "due_date",
+                    "type": "time_point_sec"
+                },
+                {
+                    "name": "repeat",
+                    "type": "uint8"
+                },
+                {
+                    "name": "repeated",
+                    "type": "uint8"
+                },
+                {
+                    "name": "recurrence_sec",
+                    "type": "uint64"
+                },
+                {
+                    "name": "auto_pay",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "payrolldesc",
+            "base": "",
+            "fields": [
+                {
+                    "name": "payroll_tag",
+                    "type": "name"
+                },
+                {
+                    "name": "description",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "payrollreg",
+            "base": "",
+            "fields": [
+                {
+                    "name": "payroll_tag",
+                    "type": "name"
+                },
+                {
+                    "name": "pay_from",
+                    "type": "name"
+                },
+                {
+                    "name": "xfer_permission",
+                    "type": "name"
+                },
+                {
+                    "name": "payment_token",
+                    "type": "extended_asset"
+                },
+                {
+                    "name": "description",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "payrollrem",
+            "base": "",
+            "fields": [
+                {
+                    "name": "payroll_tag",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "payrolls",
+            "base": "",
+            "fields": [
+                {
+                    "name": "payroll_tag",
+                    "type": "name"
+                },
+                {
+                    "name": "pay_permission",
+                    "type": "permission_level"
+                },
+                {
+                    "name": "total_paid",
+                    "type": "extended_asset"
+                },
+                {
+                    "name": "total_allocated",
+                    "type": "asset"
+                },
+                {
+                    "name": "description",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "permission_level",
+            "base": "",
+            "fields": [
+                {
+                    "name": "actor",
+                    "type": "name"
+                },
+                {
+                    "name": "permission",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "state",
+            "base": "",
+            "fields": [
+                {
+                    "name": "freeze_payments",
+                    "type": "bool"
+                },
+                {
+                    "name": "next_pay_id",
+                    "type": "uint64"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "freeze",
+            "type": "freeze",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "pay",
+            "type": "pay",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "paymentadd",
+            "type": "paymentadd",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "paymentrem",
+            "type": "paymentrem",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "payrolldesc",
+            "type": "payrolldesc",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "payrollreg",
+            "type": "payrollreg",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "payrollrem",
+            "type": "payrollrem",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "payments",
+            "type": "payments",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "payrolls",
+            "type": "payrolls",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "state",
+            "type": "state",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}

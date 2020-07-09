@@ -26,8 +26,8 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "is_active",
-                    "type": "bool"
+                    "name": "state",
+                    "type": "uint64"
                 },
                 {
                     "name": "registered",
@@ -84,6 +84,16 @@
             "fields": [
                 {
                     "name": "voter",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "firecand",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
                     "type": "name"
                 }
             ]
@@ -201,7 +211,7 @@
                     "type": "name"
                 },
                 {
-                    "name": "is_active",
+                    "name": "paused",
                     "type": "bool"
                 }
             ]
@@ -275,7 +285,27 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "inactive_candidate_count",
+                    "name": "paused_candidate_count",
+                    "type": "uint64"
+                },
+                {
+                    "name": "unregistered_candidate_count",
+                    "type": "uint64"
+                },
+                {
+                    "name": "fired_candidate_count",
+                    "type": "uint64"
+                },
+                {
+                    "name": "r1",
+                    "type": "uint64"
+                },
+                {
+                    "name": "r2",
+                    "type": "uint64"
+                },
+                {
+                    "name": "r3",
                     "type": "uint64"
                 },
                 {
@@ -285,6 +315,16 @@
                 {
                     "name": "last_election",
                     "type": "time_point_sec"
+                }
+            ]
+        },
+        {
+            "name": "unfirecand",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
                 }
             ]
         },
@@ -404,6 +444,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "firecand",
+            "type": "firecand",
+            "ricardian_contract": ""
+        },
+        {
             "name": "iweightupdat",
             "type": "iweightupdat",
             "ricardian_contract": ""
@@ -431,6 +476,11 @@
         {
             "name": "remelectorat",
             "type": "remelectorat",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "unfirecand",
+            "type": "unfirecand",
             "ricardian_contract": ""
         },
         {
