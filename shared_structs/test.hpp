@@ -1,3 +1,10 @@
+
+struct test{
+  uint64_t t;
+};
+
+
+/*
 struct members {
   eosio::name account;
   eosio::time_point_sec agreement_date;
@@ -62,4 +69,4 @@ struct coreconf{
 typedef eosio::singleton<"coreconf"_n, coreconf> coreconf_table;
 
 
-
+*/

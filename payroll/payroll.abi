@@ -4,6 +4,40 @@
     "types": [],
     "structs": [
         {
+            "name": "addmany",
+            "base": "",
+            "fields": [
+                {
+                    "name": "payroll_tag",
+                    "type": "name"
+                },
+                {
+                    "name": "payments",
+                    "type": "payment[]"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                },
+                {
+                    "name": "due_date",
+                    "type": "time_point_sec"
+                },
+                {
+                    "name": "repeat",
+                    "type": "uint8"
+                },
+                {
+                    "name": "recurrence_sec",
+                    "type": "uint64"
+                },
+                {
+                    "name": "auto_pay",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
             "name": "freeze",
             "base": "",
             "fields": [
@@ -24,6 +58,20 @@
             ]
         },
         {
+            "name": "payment",
+            "base": "",
+            "fields": [
+                {
+                    "name": "receiver",
+                    "type": "name"
+                },
+                {
+                    "name": "amount",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
             "name": "paymentadd",
             "base": "",
             "fields": [
@@ -38,6 +86,10 @@
                 {
                     "name": "amount",
                     "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
                 },
                 {
                     "name": "due_date",
@@ -86,6 +138,10 @@
                 {
                     "name": "amount",
                     "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
                 },
                 {
                     "name": "submitted",
@@ -219,6 +275,11 @@
         }
     ],
     "actions": [
+        {
+            "name": "addmany",
+            "type": "addmany",
+            "ricardian_contract": ""
+        },
         {
             "name": "freeze",
             "type": "freeze",

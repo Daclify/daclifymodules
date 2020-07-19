@@ -1,0 +1,149 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "actionhooks",
+            "base": "",
+            "fields": [
+                {
+                    "name": "hook_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "hooked_action",
+                    "type": "name"
+                },
+                {
+                    "name": "hooked_contract",
+                    "type": "name"
+                },
+                {
+                    "name": "hook_action_name",
+                    "type": "name"
+                },
+                {
+                    "name": "description",
+                    "type": "string"
+                },
+                {
+                    "name": "exec_count",
+                    "type": "uint64"
+                },
+                {
+                    "name": "last_exec",
+                    "type": "time_point_sec"
+                },
+                {
+                    "name": "enabled",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "changecolor",
+            "base": "",
+            "fields": [
+                {
+                    "name": "hooked_action",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "dummyhook",
+            "base": "",
+            "fields": [
+                {
+                    "name": "hooked_action",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "hookdel",
+            "base": "",
+            "fields": [
+                {
+                    "name": "hook_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "hookenable",
+            "base": "",
+            "fields": [
+                {
+                    "name": "hook_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "enable",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "hookreg",
+            "base": "",
+            "fields": [
+                {
+                    "name": "hooked_action",
+                    "type": "name"
+                },
+                {
+                    "name": "hooked_contract",
+                    "type": "name"
+                },
+                {
+                    "name": "hook_action_name",
+                    "type": "name"
+                },
+                {
+                    "name": "description",
+                    "type": "string"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "changecolor",
+            "type": "changecolor",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "dummyhook",
+            "type": "dummyhook",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "hookdel",
+            "type": "hookdel",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "hookenable",
+            "type": "hookenable",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "hookreg",
+            "type": "hookreg",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "actionhooks",
+            "type": "actionhooks",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}

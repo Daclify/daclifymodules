@@ -45,15 +45,25 @@ ACTION elections::newelection(name actor){
   
   auto cand_itr = by_votes.begin();
 
-  //select new top ACTIVE custodians
-  vector<name> new_custs;
+
   bool table_end_flag = false;
+  vector<name> new_custs;
+  struct payment{
+    name receiver;
+    asset amount;
+  };
+  vector<payment> payments;
+
 
   while(new_custs.size() < max_cust && !table_end_flag){
     //ignore inactive candidates and zero total_votes
     if(cand_itr != by_votes.end() && cand_itr->total_votes > 0 ){
       if(cand_itr->state == ACTIVE){
         new_custs.push_back(cand_itr->cand);
+        if(cand_itr->pay.quantity.amount > 0 && conf.max_pay.quantity.amount > 0){
+          payments.push_back(payment{cand_itr->cand, cand_itr->pay.quantity} );
+        }
+        
       }
       cand_itr++;
     }
@@ -71,16 +81,35 @@ ACTION elections::newelection(name actor){
   }
   */
 
+  s.election_count += 1;
+  s.last_election = now;
+  _state.set(s, get_self() );
+
   action(
     permission_level{get_self(), "active"_n},
     conf.parent, "isetcusts"_n,
     std::make_tuple(new_custs)
   ).send();
 
+  if(conf.max_pay.quantity.amount && payments.size() ){
+    string memo = "election round #"+to_string(s.election_count);
+    action(
+      permission_level{ get_self(), "active"_n },
+      conf.parent,
+      "ipayroll"_n,
+      std::make_tuple(
+        name("elections"),//sender_module_name
+        name("custodians"),//payroll_tag
+        payments,
+        memo,
+        time_point_sec(conf.election_period_sec + now.sec_since_epoch() ),//due_date,
+        uint8_t(1),//repeat,
+        uint64_t(0),//recurrence_sec,
+        1//auto_pay (bool)
+      )
+    ).send(); 
   
-  s.election_count += 1;
-  s.last_election = now;
-  _state.set(s, get_self() );
+  }
 
 }
 
@@ -229,7 +258,7 @@ ACTION elections::unfirecand(name account){
 
   s.unregistered_candidate_count++;
   s.fired_candidate_count--;
-  
+
   _state.set(s, get_self() );
 
   _candidates.modify(cand_itr, same_payer, [&](auto& n) {
@@ -281,7 +310,6 @@ ACTION elections::vote(name voter, vector<name> new_votes){
     check(dupvotes.insert(vote).second, "Duplicate candidate vote.");
     auto cand = _candidates.get(vote.value, "Vote for non existing candidate ");
 
-
     check(cand.state == ACTIVE, "Vote for inactive candidate.");
     if(!conf.allow_self_vote){
       check(voter != vote, "Voting for self not allowed");
@@ -296,7 +324,7 @@ ACTION elections::vote(name voter, vector<name> new_votes){
 
   //get new voteweight of voter
   uint64_t new_vote_weight;//todo get it
-  if(conf.weight_provider != get_self() || conf.weight_provider.value != 0 ) {
+  if(conf.weight_provider != get_self() ) {
     new_vote_weight = get_external_weight(conf.weight_provider, voter);
   }
   else{

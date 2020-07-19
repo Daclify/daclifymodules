@@ -3,6 +3,7 @@
 #include <eosio/singleton.hpp>
 #include <external_structs.hpp>
 
+
 using namespace std;
 using namespace eosio;
 

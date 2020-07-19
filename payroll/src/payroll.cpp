@@ -86,7 +86,8 @@ ACTION payroll::pay(uint64_t pay_id){
   uint8_t current_repeated = payment->repeated+1;
   bool is_last_payment = repeat == current_repeated;
 
-  string memo = ("\""+ payment->payroll_tag.to_string()+"\" payment (ID"+to_string(pay_id)+") "+to_string(current_repeated)+" of "+to_string(repeat) ).c_str();
+  string appended_memo = payment->memo.size() ? ": "+payment->memo : "";
+  string memo = ("\""+ payment->payroll_tag.to_string()+"\" payment (ID"+to_string(pay_id)+") "+to_string(current_repeated)+" of "+to_string(repeat)+appended_memo ).c_str();
   //send the payment
   action(
     payroll_itr->pay_permission,
@@ -124,7 +125,7 @@ ACTION payroll::pay(uint64_t pay_id){
 
 
 
-ACTION payroll::paymentadd(name payroll_tag, name receiver, asset amount, time_point_sec due_date, uint8_t repeat, uint64_t recurrence_sec, bool auto_pay){
+ACTION payroll::paymentadd(name payroll_tag, name receiver, asset amount, string memo, time_point_sec due_date, uint8_t repeat, uint64_t recurrence_sec, bool auto_pay){
   require_auth(get_self() );
   time_point_sec now = time_point_sec(current_time_point().sec_since_epoch());
   check(now <= due_date, "Due date must be in the future");
@@ -156,6 +157,7 @@ ACTION payroll::paymentadd(name payroll_tag, name receiver, asset amount, time_p
       n.payroll_tag = payroll_tag;
       n.receiver = receiver;
       n.amount = amount;
+      n.memo = memo;
       //n.submitted = time_point_sec(current_time_point().sec_since_epoch());
       n.due_date = due_date;
       n.repeat = repeat;
@@ -166,7 +168,51 @@ ACTION payroll::paymentadd(name payroll_tag, name receiver, asset amount, time_p
 
   s.next_pay_id++;
   _state.set(s, get_self());
+}
 
+ACTION payroll::addmany(name payroll_tag, vector<payment> payments, string memo, time_point_sec due_date, uint8_t repeat, uint64_t recurrence_sec, bool auto_pay){
+  require_auth(get_self() );
+  time_point_sec now = time_point_sec(current_time_point().sec_since_epoch());
+  check(now <= due_date, "Due date must be in the future");
+  if(repeat > 1){
+    check(recurrence_sec != 0, "Repeating payments need positive recurrence_sec");
+    
+  }
+  state_table _state(get_self(), get_self().value);
+  auto s = _state.get_or_create(get_self(), state() );
+
+  payrolls_table _payrolls(get_self(), get_self().value);
+  auto payroll_itr = _payrolls.find(payroll_tag.value);
+  check(payroll_itr != _payrolls.end(), "Payroll with this tag does not exist");
+
+  payments_table _payments(get_self(), get_self().value);
+  auto selected_payroll = *payroll_itr;
+  asset temp_allocated = asset(0, selected_payroll.total_paid.quantity.symbol ); 
+  for(payment p: payments){
+    check(is_account(p.receiver), "Receiver "+p.receiver.to_string()+" isn't an existing account");
+    check(p.amount.symbol == selected_payroll.total_paid.quantity.symbol, "Payroll with this tag doesn't pay with this token");
+    check(p.amount.amount > 0 , "Amount must be greater then zero");
+
+    temp_allocated += (p.amount*repeat);
+
+    _payments.emplace(get_self(), [&](auto& n) {
+        n.pay_id = s.next_pay_id;
+        n.payroll_tag = payroll_tag;
+        n.receiver = p.receiver;
+        n.amount = p.amount;
+        n.memo = memo;
+        n.due_date = due_date;
+        n.repeat = repeat;
+        n.recurrence_sec = recurrence_sec;
+        n.auto_pay = auto_pay;
+    });
+    s.next_pay_id++;
+
+  }
+  _payrolls.modify( payroll_itr, same_payer, [&]( auto& n) {
+      n.total_allocated += temp_allocated;
+  });
+  _state.set(s, get_self());
 }
 
 ACTION payroll::paymentrem(uint64_t pay_id){

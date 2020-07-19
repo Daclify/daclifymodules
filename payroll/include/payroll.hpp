@@ -10,15 +10,25 @@ CONTRACT payroll : public contract {
   public:
     using contract::contract;
 
+    struct payment{
+      name receiver;
+      asset amount;
+    };
+
     ACTION payrollreg(name payroll_tag, name pay_from, name xfer_permission, extended_asset payment_token, string description);
     ACTION payrollrem(name payroll_tag);
     ACTION payrolldesc(name payroll_tag, string description);
-    ACTION paymentadd(name payroll_tag, name receiver, asset amount, time_point_sec due_date, uint8_t repeat, uint64_t recurrence_sec, bool auto_pay);
+    ACTION paymentadd(name payroll_tag, name receiver, asset amount, string memo, time_point_sec due_date, uint8_t repeat, uint64_t recurrence_sec, bool auto_pay);
+    
+    ACTION addmany(name payroll_tag, vector<payment> payments, string memo, time_point_sec due_date, uint8_t repeat, uint64_t recurrence_sec, bool auto_pay);
+
     ACTION paymentrem(uint64_t pay_id);
     ACTION pay(uint64_t pay_id);
 
 
     ACTION freeze(bool freeze);
+
+
 
 
     TABLE state {
@@ -44,6 +54,7 @@ CONTRACT payroll : public contract {
       name payroll_tag;
       name receiver;
       asset amount;
+      string memo;
       time_point_sec submitted = time_point_sec(current_time_point().sec_since_epoch());
       time_point_sec due_date;
       uint8_t repeat=1;
