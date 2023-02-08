@@ -1,5 +1,15 @@
 #include <payroll.hpp>
 
+/**
+ * The 'payrollreg' action creates a new payroll record in the table, and sets the total_paid and total_allocated to 0
+ * 
+ * @param payroll_tag The name of the payroll.
+ * @param pay_from The account that will be used to pay the employees.
+ * @param xfer_permission The permission that the payroll contract will use to transfer funds from the
+ * pay_from account.
+ * @param payment_token The token that will be used to pay employees.
+ * @param description A description of the payroll.
+ */
 ACTION payroll::payrollreg(name payroll_tag, name pay_from, name xfer_permission, extended_asset payment_token, string description) {
   require_auth(get_self() );
   check(payroll_tag.value, "payroll_tag can't be empty");
@@ -26,6 +36,11 @@ ACTION payroll::payrollreg(name payroll_tag, name pay_from, name xfer_permission
   });
 }
 
+/**
+ * The 'payrollrem' action removes a payroll from the payrolls table
+ * 
+ * @param payroll_tag The tag of the payroll to be removed.
+ */
 ACTION payroll::payrollrem(name payroll_tag) {
   require_auth(get_self() );
   check(payroll_tag.value, "payroll_tag can't be empty");
@@ -42,6 +57,12 @@ ACTION payroll::payrollrem(name payroll_tag) {
   _payrolls.erase(itr);
 }
 
+/**
+ * The `payrolldesc` action allows the contract owner to update the description of a payroll
+ * 
+ * @param payroll_tag The name of the payroll you want to update.
+ * @param description The description of the payroll.
+ */
 ACTION payroll::payrolldesc(name payroll_tag, string description){
   require_auth(get_self() );
   check(payroll_tag.value, "payroll_tag can't be empty");
@@ -54,6 +75,11 @@ ACTION payroll::payrolldesc(name payroll_tag, string description){
 }
 
 
+/**
+ * The 'pay' action pays a particular payment (by id) if the payment due-date has been reached
+ * 
+ * @param pay_id the id of the payment to be paid
+ */
 ACTION payroll::pay(uint64_t pay_id){
 
   state_table _state(get_self(), get_self().value);
@@ -125,6 +151,19 @@ ACTION payroll::pay(uint64_t pay_id){
 
 
 
+/**
+ * The 'paymentadd' action adds a payment to the payments table
+ * 
+ * @param payroll_tag The tag of the payroll you want to add the payment to.
+ * @param receiver The account that will receive the payment
+ * @param amount The amount of tokens to be paid.
+ * @param memo A string that will be included in the memo of the transfer action.
+ * @param due_date The date and time when the payment is due.
+ * @param repeat How many times the payment should be repeated.
+ * @param recurrence_sec The number of seconds between each payment.
+ * @param auto_pay If true, the payment will be automatically paid when the due date is reached. If
+ * false, the payment will be paid when the pay action is called.
+ */
 ACTION payroll::paymentadd(name payroll_tag, name receiver, asset amount, string memo, time_point_sec due_date, uint8_t repeat, uint64_t recurrence_sec, bool auto_pay){
   require_auth(get_self() );
   time_point_sec now = time_point_sec(current_time_point().sec_since_epoch());
@@ -170,6 +209,17 @@ ACTION payroll::paymentadd(name payroll_tag, name receiver, asset amount, string
   _state.set(s, get_self());
 }
 
+/**
+ * The 'addmany' action adds (optionally repeating) payments to the payments table, and increments the next_pay_id
+ * 
+ * @param payroll_tag The tag of the payroll you want to use
+ * @param payments a vector of payments, each containing a receiver and an amount
+ * @param memo A string that will be attached to the memo of the transfer action.
+ * @param due_date The date the payment is due.
+ * @param repeat How many times to repeat the payment.
+ * @param recurrence_sec The number of seconds between each payment.
+ * @param auto_pay If true, the payment will be automatically paid when the due date is reached.
+ */
 ACTION payroll::addmany(name payroll_tag, vector<payment> payments, string memo, time_point_sec due_date, uint8_t repeat, uint64_t recurrence_sec, bool auto_pay){
   require_auth(get_self() );
   time_point_sec now = time_point_sec(current_time_point().sec_since_epoch());
@@ -215,6 +265,11 @@ ACTION payroll::addmany(name payroll_tag, vector<payment> payments, string memo,
   _state.set(s, get_self());
 }
 
+/**
+ * The 'paymentrem' action removes a payment from the payroll
+ * 
+ * @param pay_id The id of the payment to be removed.
+ */
 ACTION payroll::paymentrem(uint64_t pay_id){
   require_auth(get_self() );
   payments_table _payments(get_self(), get_self().value);
@@ -234,6 +289,12 @@ ACTION payroll::paymentrem(uint64_t pay_id){
 }
 
 
+/**
+ * The `freeze` action allows the contract owner to freeze the contract, preventing any further payments from
+ * being made
+ * 
+ * @param freeze true to freeze payments, false to unfreeze payments
+ */
 ACTION payroll::freeze(bool freeze){
   require_auth(get_self() );
   state_table _state(get_self(), get_self().value);
