@@ -2,6 +2,13 @@
 #include <functions.cpp>
 
 
+/**
+ * updateconf allows the contract owner to update the configuration
+ * 
+ * @param new_conf The new configuration to be set.
+ * @param remove If true, the configuration will be removed.
+ * 
+ */
 ACTION elections::updateconf(mod_config new_conf, bool remove){
     require_auth(get_self());
 
@@ -19,6 +26,15 @@ ACTION elections::updateconf(mod_config new_conf, bool remove){
     _config.set(conf, get_self());
 }
 
+/**
+ * newelection action sets up a new election.
+ * The action checks if the elections are enabled, if there are active candidates, if the time since the last
+ * election is greater than the election period, and if the maximum number of custodians is greater
+ * than zero. If all of these conditions are met, it selects the top candidates by total_votes and sets
+ * them as the new custodians. It also pays the candidates if the maximum payment is greater than zero
+ * 
+ * @param actor the account that is calling the action
+ */
 ACTION elections::newelection(name actor){
 
   require_auth(actor);
@@ -113,6 +129,11 @@ ACTION elections::newelection(name actor){
 
 }
 
+/**
+ * The regcand action allows a member of the group to register as a candidate
+ * 
+ * @param account The account that is registering as a candidate.
+ */
 ACTION elections::regcand(name account){
 
   require_auth(account);
@@ -164,6 +185,12 @@ ACTION elections::regcand(name account){
 
 }
 
+/**
+ * `pausecampaig` action allows a candidate to pause or resume their campaign
+ * 
+ * @param candidate The account name of the candidate.
+ * @param paused true if you want to pause the campaign, false if you want to resume it.
+ */
 ACTION elections::pausecampaig(name candidate, bool paused){
   require_auth(candidate);
   candidates_table _candidates(get_self(), get_self().value);
@@ -192,6 +219,11 @@ ACTION elections::pausecampaig(name candidate, bool paused){
   _state.set(s, get_self() );
 }
 
+/**
+ * The action `unregcand` is used to unregister a candidate
+ * 
+ * @param candidate The account name of the candidate to unregister.
+ */
 ACTION elections::unregcand(name candidate){
   require_auth(candidate);
   candidates_table _candidates(get_self(), get_self().value);
@@ -218,6 +250,11 @@ ACTION elections::unregcand(name candidate){
   });
 }
 
+/**
+ * The 'firecand' action fires a candidate
+ * 
+ * @param account The account name of the candidate to fire.
+ */
 ACTION elections::firecand(name account){
   require_auth(get_self() );
   candidates_table _candidates(get_self(), get_self().value);
@@ -246,6 +283,12 @@ ACTION elections::firecand(name account){
   });
 }
 
+/**
+ * The 'unfirecand' action takes a candidate account name as an argument, checks that the candidate is fired, and then
+ * changes the candidate's state to unregistered
+ * 
+ * @param account the account name of the candidate to unfire
+ */
 ACTION elections::unfirecand(name account){
   require_auth(get_self() );
   candidates_table _candidates(get_self(), get_self().value);
@@ -266,6 +309,12 @@ ACTION elections::unfirecand(name account){
   });
 }
 
+/**
+ * The 'updatepay' action allows a candidate to update their payment request
+ * 
+ * @param candidate The account name of the candidate.
+ * @param new_pay The new pay for the candidate.
+ */
 ACTION elections::updatepay(name candidate, extended_asset new_pay){
   require_auth(candidate);
   candidates_table _candidates(get_self(), get_self().value);
@@ -281,6 +330,12 @@ ACTION elections::updatepay(name candidate, extended_asset new_pay){
   });
 }
 
+/**
+ * The 'vote' action takes a voter and a vector of votes and updates the voters table with those new votes
+ * 
+ * @param voter The account that is voting.
+ * @param new_votes a vector of names of the candidates you want to vote for.
+ */
 ACTION elections::vote(name voter, vector<name> new_votes){
 
   //check if voter is eligible to vote
@@ -355,6 +410,11 @@ ACTION elections::vote(name voter, vector<name> new_votes){
   
 }
 
+/**
+ * The 'addelectorat' action adds voters to the list of voters
+ * 
+ * @param voters a vector of account names that will be added to the electorate.
+ */
 ACTION elections::addelectorat(vector<name> voters){
   require_auth(get_self() );
   electorate_table _electorate(get_self(), get_self().value);
@@ -372,6 +432,11 @@ ACTION elections::addelectorat(vector<name> voters){
   }
 }
 
+/**
+ * The 'remelectorat' action removes voters from the electorate table.
+ * 
+ * @param voters a vector of account names that will be removed from the electorate
+ */
 ACTION elections::remelectorat(vector<name> voters){
   require_auth(get_self() );
   electorate_table _electorate(get_self(), get_self().value);
@@ -385,6 +450,12 @@ ACTION elections::remelectorat(vector<name> voters){
   }
 }
 
+/**
+ * The `openstake` action allows a member to open a stake for a specific asset
+ * 
+ * @param member The account that is opening the stake
+ * @param stakeasset The asset that is being staked.
+ */
 ACTION elections::openstake(name member, extended_asset stakeasset){
   require_auth(member);
   mod_config conf = get_config();
@@ -401,6 +472,12 @@ ACTION elections::openstake(name member, extended_asset stakeasset){
   } 
 }
 
+/**
+ * The 'unstake' action allows a member to unstake an amount of a specified token
+ * 
+ * @param member The account name of the member who is unstaking.
+ * @param stakeasset The asset to be unstaked.
+ */
 ACTION elections::unstake(name member, extended_asset stakeasset){
   require_auth(member);
   mod_config conf = get_config();
@@ -431,6 +508,12 @@ ACTION elections::unstake(name member, extended_asset stakeasset){
   });
 }
 
+/**
+ * The 'claimstake' action allows a member to claim their stake back after the release time has been met
+ * 
+ * @param member The account name of the member who is claiming the stake.
+ * @param id The id of the stake release.
+ */
 ACTION elections::claimstake(name member, uint64_t id){
   require_auth(member);
   stakerelease_table _stakerelease(get_self(), get_self().value );
@@ -449,6 +532,13 @@ ACTION elections::claimstake(name member, uint64_t id){
   _stakerelease.erase(itr);
 }
 
+/**
+ * The `iweightupdat` action is called by the weight provider to update the weight of a voter
+ * 
+ * @param provider The account that is allowed to push weight updates.
+ * @param account The account that is voting
+ * @param new_weight the new weight of the voter
+ */
 ACTION elections::iweightupdat(name provider, name account, uint64_t new_weight){
   require_auth(provider);
   mod_config conf = get_config();
@@ -481,6 +571,18 @@ ACTION elections::iweightupdat(name provider, name account, uint64_t new_weight)
 }
 
 //notify transfer handler
+
+/**
+ * If the transfer is to the elections contract, and the memo starts with "candidate stake", then the
+ * transfer is added to the candidate's stake
+ * 
+ * @param from The account that sent the funds.
+ * @param to The account that is receiving the funds.
+ * @param quantity The amount of tokens being transferred.
+ * @param memo The memo field of the transfer action.
+ * 
+ * @return Nothing.
+ */
 void elections::on_transfer(name from, name to, asset quantity, string memo){
   if(from == to){
     return;
@@ -503,6 +605,10 @@ void elections::on_transfer(name from, name to, asset quantity, string memo){
 }
 
 //def
+
+/**
+ * The 'clearcands' action clears the candidates table
+ */
 ACTION elections::clearcands(){
     require_auth(get_self());
     candidates_table _candidates(get_self(), get_self().value);
@@ -512,12 +618,18 @@ ACTION elections::clearcands(){
     }
 }
 
+/**
+ * The 'clearstate' action clears the state table
+ */
 ACTION elections::clearstate(){
     require_auth(get_self());
     state_table _state(get_self(), get_self().value);
     _state.remove();
 }
 
+/**
+ * The 'clearvoters' action clears the voters table.
+ */
 ACTION elections::clearvoters(){
     require_auth(get_self());
     voters_table _voters(get_self(), get_self().value);
